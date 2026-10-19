@@ -1,10 +1,8 @@
-import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from config import LLM_PROVIDER, GOOGLE_API_KEY
 
-if LLM_PROVIDER == "gemini":
-    genai.configure(api_key=GOOGLE_API_KEY)
-    model = genai.GenerativeModel("gemini-2.5-flash")  # fast + free tier friendly
+client = None
 
 
 def call_llm(prompt: str) -> str:
@@ -13,14 +11,17 @@ def call_llm(prompt: str) -> str:
     """
     try:
         if LLM_PROVIDER == "gemini":
-            response = model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0
-                }
+            global client
+            if client is None:
+                client = genai.Client(api_key=GOOGLE_API_KEY)
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(temperature=0),
             )
 
-            return response.text.strip()
+            return (response.text or "").strip()
 
     except Exception as e:
         print("LLM call failed:", e)
